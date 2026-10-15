@@ -1,0 +1,27 @@
+{
+  "name": "shop-kart",
+  "version": "1.0.0",
+  "description": "Welcome to **ShopKart**, a full-stack e-commerce platform built with Node.js, Express, MongoDB Atlas, React, and Vite.",
+  "main": "index.js",
+ 
+"scripts": {
+  "test": "echo \"Error: no test specified\" && exit 1",
+  "dev": "concurrently -n BACKEND,FRONTEND -c blue,green \"npm start --prefix backend\" \"npm run dev --prefix frontend\""
+},
+
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dhaval1933/Shop-Kart.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Dhaval1933/Shop-Kart/issues"
+  },
+  "homepage": "https://github.com/Dhaval1933/Shop-Kart#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}

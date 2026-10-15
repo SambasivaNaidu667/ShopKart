@@ -1,336 +1,374 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   User,
   Mail,
   Phone,
   Calendar,
-  ShieldCheck,
-  Package,
-  Heart,
-  Gift,
-  MapPin,
   LogOut,
-  Truck,
-  Headphones,
-  RefreshCw,
-  CreditCard,
-  Loader2,
   ShoppingBag,
-  ArrowRight
+  Heart,
+  Package,
+  ShieldCheck,
+  Truck,
+  CreditCard,
+  Clock,
+  Key,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
 } from "lucide-react";
-import { getCustomerProfile, logoutCustomer } from "../services/api";
+import { logoutCustomer, changePassword } from "../services/api";
 
 export default function Home({ user, setUser, onLogoutSuccess }) {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState(user || null);
-  const [isLoading, setIsLoading] = useState(!user);
-  const [error, setError] = useState("");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchCustomer = async () => {
-      try {
-        setIsLoading(true);
-        /**
-         * Task 3 requirement:
-         * Protected Home Page fetches the logged-in customer using GET /customers/me.
-         * If the HttpOnly cookie is missing or invalid, backend returns 401.
-         */
-        const data = await getCustomerProfile();
-        if (isMounted) {
-          setProfile(data);
-          if (setUser) {
-            setUser(data);
-          }
-        }
-      } catch (err) {
-        if (isMounted) {
-          console.warn("Unauthorized or session expired:", err);
-          // Requirement: If Not Logged In → Automatically redirect to /login
-          if (setUser) {
-            setUser(null);
-          }
-          navigate("/login", {
-            replace: true,
-            state: { message: "Please log in to access your ShopKart account." },
-          });
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchCustomer();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [navigate, setUser]);
+  // Change Password Form State
+  const [passForm, setPassForm] = useState({ oldPassword: "", newPassword: "" });
+  const [passLoading, setPassLoading] = useState(false);
+  const [passError, setPassError] = useState(null);
+  const [passSuccess, setPassSuccess] = useState(null);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
       await logoutCustomer();
     } catch (err) {
-      console.error("Logout error:", err);
+      console.error("Logout notice:", err);
     } finally {
       setIsLoggingOut(false);
-      if (setUser) setUser(null);
       if (onLogoutSuccess) onLogoutSuccess();
-      navigate("/login", {
-        replace: true,
-        state: { message: "You have been logged out successfully." },
-      });
+      navigate("/login", { replace: true });
     }
   };
 
-  // Loading state while verifying token
-  if (isLoading) {
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setPassLoading(true);
+    setPassError(null);
+    setPassSuccess(null);
+    try {
+      await changePassword(passForm);
+      setPassSuccess("Password updated successfully!");
+      setPassForm({ oldPassword: "", newPassword: "" });
+      setTimeout(() => setShowPasswordModal(false), 2000);
+    } catch (err) {
+      setPassError(err.response?.data?.message || err.message || "Failed to change password.");
+    } finally {
+      setPassLoading(false);
+    }
+  };
+
+  if (!user) {
     return (
-      <div className="loading-screen" id="home-loading-state">
-        <div className="loading-spinner-large" />
-        <p className="loading-text">Authenticating your ShopKart session...</p>
+      <div className="home-page">
+        <div className="home-hero">
+          <div className="hero-content">
+            <div>
+              <span className="hero-welcome-badge">
+                <Sparkles size={14} /> Welcome to ShopKart
+              </span>
+              <h1 className="hero-title">Discover Exclusive Deals & Products</h1>
+              <p className="hero-subtitle">
+                Join thousands of happy shoppers. Log in to manage your account, track orders, and save your favourite items.
+              </p>
+            </div>
+            <div className="hero-actions">
+              <Link to="/login" className="btn-primary" style={{ textDecoration: "none", display: "inline-flex" }}>
+                Sign In
+              </Link>
+              <Link to="/register" className="btn-secondary-continue" style={{ textDecoration: "none" }}>
+                Create Account
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        <div className="perks-grid">
+          <div className="perk-card">
+            <div className="perk-icon-wrap"><Truck size={22} /></div>
+            <div>
+              <div className="perk-title">Free Express Shipping</div>
+              <div className="perk-desc">On all orders above ₹499</div>
+            </div>
+          </div>
+          <div className="perk-card">
+            <div className="perk-icon-wrap"><ShieldCheck size={22} /></div>
+            <div>
+              <div className="perk-title">100% Secure Checkout</div>
+              <div className="perk-desc">Encrypted Razorpay payments</div>
+            </div>
+          </div>
+          <div className="perk-card">
+            <div className="perk-icon-wrap"><CreditCard size={22} /></div>
+            <div>
+              <div className="perk-title">Instant Refunds</div>
+              <div className="perk-desc">No hassle returns within 7 days</div>
+            </div>
+          </div>
+          <div className="perk-card">
+            <div className="perk-icon-wrap"><Clock size={22} /></div>
+            <div>
+              <div className="perk-title">24/7 Customer Support</div>
+              <div className="perk-desc">We are here to assist you anytime</div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
-  // Fallback if profile not loaded yet
-  if (!profile) {
-    return null;
-  }
-
-  const joinDate = profile.createdAt
-    ? new Date(profile.createdAt).toLocaleDateString("en-US", {
+  // Formatted registration date
+  const joinedDate = user.createdAt
+    ? new Date(user.createdAt).toLocaleDateString("en-IN", {
         year: "numeric",
         month: "long",
         day: "numeric",
       })
-    : "Member since 2026";
+    : "Verified Customer";
 
   return (
-    <div className="home-page" id="shopkart-home-page">
+    <div className="home-page">
       {/* Hero Welcome Banner */}
-      <section className="home-hero">
+      <div className="home-hero">
         <div className="hero-content">
           <div className="hero-user-info">
-            <div className="hero-avatar" id="customer-avatar">
-              {profile.fullName ? profile.fullName.charAt(0).toUpperCase() : "C"}
+            <div className="hero-avatar">
+              {user.fullName ? user.fullName.charAt(0).toUpperCase() : <User size={32} />}
             </div>
             <div>
-              <div className="hero-welcome-badge">
-                <ShieldCheck size={14} />
-                <span>Verified Customer</span>
-              </div>
-              <h1 className="hero-title" id="welcome-message">
-                Welcome back, {profile.fullName}!
-              </h1>
+              <span className="hero-welcome-badge">
+                <Sparkles size={14} /> Account Dashboard
+              </span>
+              <h1 className="hero-title">Welcome back, {user.fullName}!</h1>
               <p className="hero-subtitle">
-                Welcome to your ShopKart customer portal. Your account is active and protected.
+                Access your ShopKart customer profile, saved wishlist, and active orders below.
               </p>
             </div>
           </div>
-
           <div className="hero-actions">
+            <Link to="/products" className="btn-browse-catalog">
+              <ShoppingBag size={18} />
+              <span>Browse Products</span>
+            </Link>
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
               className="btn-hero-logout"
-              id="btn-hero-logout"
             >
-              {isLoggingOut ? (
-                <Loader2 size={16} className="spinner" />
-              ) : (
-                <LogOut size={16} />
-              )}
-              <span>{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
+              <LogOut size={16} />
+              <span>{isLoggingOut ? "Logging out..." : "Sign Out"}</span>
             </button>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Lab 03: Product Catalog Discovery Callout Banner */}
-      <section className="catalog-callout-banner">
-        <div className="catalog-callout-content">
-          <div className="catalog-callout-icon">
-            <ShoppingBag size={28} />
-          </div>
-          <div className="catalog-callout-text">
-            <span className="catalog-tag">New in ShopKart</span>
-            <h3>Explore Our Product Catalog</h3>
-            <p>
-              Browse live inventory across electronics, fashion, books, and home essentials with instant search and filtering.
-            </p>
-          </div>
-        </div>
-        <Link to="/products" className="btn-browse-catalog" id="btn-browse-catalog-home">
-          <span>Start Shopping</span>
-          <ArrowRight size={18} />
-        </Link>
-      </section>
-
-      {/* Main Dashboard Grid */}
+      {/* Quick Navigation Cards */}
       <div className="dashboard-grid">
-        {/* Customer Information Card */}
-        <div className="dash-card" id="customer-profile-card">
-          <div className="dash-card-header">
-            <h2 className="dash-card-title">
-              <User size={20} style={{ color: "var(--primary-600)" }} />
-              <span>Customer Information</span>
-            </h2>
-            <span className="pill-badge pill-success">Authenticated</span>
-          </div>
-
-          <div className="info-list">
-            <div className="info-item">
-              <div className="info-item-label">
-                <User size={16} />
-                <span>Full Name</span>
-              </div>
-              <div className="info-item-value" id="display-customer-name">
-                {profile.fullName}
-              </div>
-            </div>
-
-            <div className="info-item">
-              <div className="info-item-label">
-                <Mail size={16} />
-                <span>Email Address</span>
-              </div>
-              <div className="info-item-value" id="display-customer-email">
-                {profile.email}
-              </div>
-            </div>
-
-            <div className="info-item">
-              <div className="info-item-label">
-                <Phone size={16} />
-                <span>Phone Number</span>
-              </div>
-              <div className="info-item-value" id="display-customer-phone">
-                {profile.phone}
-              </div>
-            </div>
-
-            <div className="info-item">
-              <div className="info-item-label">
-                <Calendar size={16} />
-                <span>Member Since</span>
-              </div>
-              <div className="info-item-value" id="display-customer-joined">
-                {joinDate}
-              </div>
-            </div>
-
-            {profile._id && (
-              <div className="info-item">
-                <div className="info-item-label">
-                  <ShieldCheck size={16} />
-                  <span>Customer ID</span>
-                </div>
-                <div className="info-item-value" style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                  {profile._id}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ShopKart Account Overview Card */}
+        {/* Customer Profile Details Card */}
         <div className="dash-card">
           <div className="dash-card-header">
             <h2 className="dash-card-title">
-              <Package size={20} style={{ color: "var(--primary-600)" }} />
-              <span>ShopKart Activity</span>
+              <User size={20} className="text-indigo-600" />
+              <span>Profile Information</span>
             </h2>
-            <span className="pill-badge pill-primary">Customer Tier: Gold</span>
+            <span className="pill-badge pill-success">
+              <CheckCircle2 size={12} /> Active Session
+            </span>
           </div>
 
           <div className="info-list">
             <div className="info-item">
               <div className="info-item-label">
-                <Package size={16} />
-                <span>Active Orders</span>
+                <User size={15} />
+                <span>Full Name</span>
               </div>
-              <div className="info-item-value">0 items processing</div>
+              <div className="info-item-value">{user.fullName || "N/A"}</div>
             </div>
 
             <div className="info-item">
               <div className="info-item-label">
-                <Heart size={16} />
-                <span>Saved Wishlist</span>
+                <Mail size={15} />
+                <span>Email Address</span>
               </div>
-              <div className="info-item-value">4 items saved</div>
+              <div className="info-item-value">{user.email || "N/A"}</div>
             </div>
 
             <div className="info-item">
               <div className="info-item-label">
-                <Gift size={16} />
-                <span>ShopKart Rewards</span>
+                <Phone size={15} />
+                <span>Phone Number</span>
               </div>
-              <div className="info-item-value" style={{ color: "var(--primary-600)" }}>
-                150 Bonus Points
-              </div>
+              <div className="info-item-value">{user.phone || "N/A"}</div>
             </div>
 
             <div className="info-item">
               <div className="info-item-label">
-                <MapPin size={16} />
-                <span>Shipping Address</span>
+                <Calendar size={15} />
+                <span>Member Since</span>
               </div>
-              <div className="info-item-value">Default delivery address saved</div>
+              <div className="info-item-value">{joinedDate}</div>
             </div>
+          </div>
+
+          <div style={{ marginTop: "1.5rem" }}>
+            <button
+              onClick={() => setShowPasswordModal(true)}
+              className="btn-secondary-continue"
+              style={{ width: "100%", justifyContent: "center" }}
+            >
+              <Key size={16} />
+              <span>Change Password</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Access Card */}
+        <div className="dash-card">
+          <div className="dash-card-header">
+            <h2 className="dash-card-title">
+              <ShoppingBag size={20} className="text-indigo-600" />
+              <span>Quick Actions</span>
+            </h2>
+            <span className="pill-badge pill-primary">ShopKart Portal</span>
+          </div>
+
+          <div className="info-list" style={{ gap: "0.85rem" }}>
+            <Link to="/products" className="btn-secondary-continue" style={{ textDecoration: "none", justifyContent: "flex-start" }}>
+              <ShoppingBag size={18} className="text-indigo-600" />
+              <div style={{ textAlign: "left" }}>
+                <div style={{ fontWeight: 600 }}>Explore Product Catalog</div>
+                <div style={{ fontSize: "0.775rem", color: "#64748b" }}>Search, filter & find deals</div>
+              </div>
+            </Link>
+
+            <Link to="/wishlist" className="btn-secondary-continue" style={{ textDecoration: "none", justifyContent: "flex-start" }}>
+              <Heart size={18} className="text-rose-500" />
+              <div style={{ textAlign: "left" }}>
+                <div style={{ fontWeight: 600 }}>My Saved Wishlist</div>
+                <div style={{ fontSize: "0.775rem", color: "#64748b" }}>View products you saved for later</div>
+              </div>
+            </Link>
+
+            <Link to="/orders" className="btn-secondary-continue" style={{ textDecoration: "none", justifyContent: "flex-start" }}>
+              <Package size={18} className="text-emerald-600" />
+              <div style={{ textAlign: "left" }}>
+                <div style={{ fontWeight: 600 }}>My Order History</div>
+                <div style={{ fontSize: "0.775rem", color: "#64748b" }}>Track active and completed purchases</div>
+              </div>
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Customer Perks & Benefits */}
-      <h3 style={{ fontSize: "1.15rem", marginBottom: "1rem" }}>ShopKart Benefits</h3>
+      {/* E-Commerce Perks Bar */}
       <div className="perks-grid">
         <div className="perk-card">
-          <div className="perk-icon-wrap">
-            <Truck size={22} />
-          </div>
+          <div className="perk-icon-wrap"><Truck size={22} /></div>
           <div>
             <div className="perk-title">Free Express Shipping</div>
-            <div className="perk-desc">On all orders over $49</div>
+            <div className="perk-desc">On all orders above ₹499</div>
           </div>
         </div>
-
         <div className="perk-card">
-          <div className="perk-icon-wrap">
-            <RefreshCw size={22} />
-          </div>
+          <div className="perk-icon-wrap"><ShieldCheck size={22} /></div>
           <div>
-            <div className="perk-title">30-Day Easy Returns</div>
-            <div className="perk-desc">Hassle-free return policy</div>
+            <div className="perk-title">100% Secure Checkout</div>
+            <div className="perk-desc">Encrypted Razorpay payments</div>
           </div>
         </div>
-
         <div className="perk-card">
-          <div className="perk-icon-wrap">
-            <CreditCard size={22} />
-          </div>
+          <div className="perk-icon-wrap"><CreditCard size={22} /></div>
           <div>
-            <div className="perk-title">Secure Payments</div>
-            <div className="perk-desc">Encrypted with 256-bit SSL</div>
+            <div className="perk-title">Instant Refunds</div>
+            <div className="perk-desc">No hassle returns within 7 days</div>
           </div>
         </div>
-
         <div className="perk-card">
-          <div className="perk-icon-wrap">
-            <Headphones size={22} />
-          </div>
+          <div className="perk-icon-wrap"><Clock size={22} /></div>
           <div>
-            <div className="perk-title">24/7 Support</div>
-            <div className="perk-desc">Dedicated customer assistance</div>
+            <div className="perk-title">24/7 Customer Support</div>
+            <div className="perk-desc">We are here to assist you anytime</div>
           </div>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      {showPasswordModal && (
+        <div className="modal-backdrop">
+          <div className="auth-card" style={{ maxWidth: "420px" }}>
+            <div className="auth-header">
+              <span className="auth-badge"><Key size={14} /> Security</span>
+              <h2 className="auth-title">Change Password</h2>
+              <p className="auth-subtitle">Enter your old password and choose a new one</p>
+            </div>
+
+            {passError && (
+              <div className="alert alert-error">
+                <AlertCircle size={18} className="alert-icon" />
+                <span>{passError}</span>
+              </div>
+            )}
+
+            {passSuccess && (
+              <div className="alert alert-success">
+                <CheckCircle2 size={18} className="alert-icon" />
+                <span>{passSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handlePasswordSubmit} className="auth-form">
+              <div className="form-group">
+                <label className="form-label">Old Password</label>
+                <input
+                  type="password"
+                  required
+                  value={passForm.oldPassword}
+                  onChange={(e) => setPassForm({ ...passForm, oldPassword: e.target.value })}
+                  placeholder="••••••••"
+                  className="form-input"
+                  style={{ paddingLeft: "1rem" }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">New Password (min 6 characters)</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={passForm.newPassword}
+                  onChange={(e) => setPassForm({ ...passForm, newPassword: e.target.value })}
+                  placeholder="••••••••"
+                  className="form-input"
+                  style={{ paddingLeft: "1rem" }}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
+                  className="btn-secondary-continue"
+                  style={{ flex: 1, justifyContent: "center" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={passLoading}
+                  className="btn-primary"
+                  style={{ flex: 1.2, marginTop: 0 }}
+                >
+                  {passLoading ? "Updating..." : "Update Password"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

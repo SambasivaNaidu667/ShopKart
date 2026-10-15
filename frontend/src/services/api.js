@@ -1,78 +1,75 @@
 import axios from "axios";
 
 /**
- * Axios instance configured for ShopKart authentication.
- *
- * CRITICAL SETTING:
- * `withCredentials: true` ensures that HttpOnly cookies (such as our JWT token)
- * are automatically sent with every request and stored by the browser upon receiving
- * Set-Cookie headers from the backend.
+ * ShopKart API Service
+ * Handles all HTTP requests for Customer Auth, Products, Wishlist, Cart, and Orders.
+ * `withCredentials: true` ensures HttpOnly JWT cookies are sent automatically.
  */
-const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
 export const authApi = axios.create({
   baseURL: `${API_BASE_URL}/customers`,
   withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
 });
 
 export const productApi = axios.create({
   baseURL: `${API_BASE_URL}/products`,
   withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
 });
 
-/**
- * Task 1: Register a new customer
- * @route POST /customers/register
- * @param {Object} data - { fullName, email, password, phone }
- */
+export const wishlistApi = axios.create({
+  baseURL: `${API_BASE_URL}/wishlist`,
+  withCredentials: true,
+  headers: { "Content-Type": "application/json" },
+});
+
+export const cartApi = axios.create({
+  baseURL: `${API_BASE_URL}/cart`,
+  withCredentials: true,
+  headers: { "Content-Type": "application/json" },
+});
+
+export const orderApi = axios.create({
+  baseURL: `${API_BASE_URL}/orders`,
+  withCredentials: true,
+  headers: { "Content-Type": "application/json" },
+});
+
+// ==========================================
+// Lab 01 & 02 — Customer Authentication APIs
+// ==========================================
+
 export const registerCustomer = async (data) => {
   const response = await authApi.post("/register", data);
   return response.data;
 };
 
-/**
- * Task 2: Login customer and obtain HttpOnly session cookie
- * @route POST /customers/login
- * @param {Object} credentials - { email, password }
- */
 export const loginCustomer = async (credentials) => {
   const response = await authApi.post("/login", credentials);
   return response.data;
 };
 
-/**
- * Task 3: Fetch currently logged-in customer's profile
- * @route GET /customers/me
- */
 export const getCustomerProfile = async () => {
   const response = await authApi.get("/me");
   return response.data;
 };
 
-/**
- * Task 4: Logout customer and clear session cookie
- * @route POST /customers/logout
- */
 export const logoutCustomer = async () => {
   const response = await authApi.post("/logout");
   return response.data;
 };
 
-/**
- * Lab 03 - Part 1 & 2: Products APIs
- */
+export const changePassword = async (passwords) => {
+  const response = await authApi.patch("/change-password", passwords);
+  return response.data;
+};
 
-/**
- * Fetch products list with optional search, category filter, and sorting
- * @route GET /products?search=...&category=...&sort=...
- * @param {Object} options - { search, category, sort }
- */
+// ==========================================
+// Lab 03 — Product Catalog & Discovery APIs
+// ==========================================
+
 export const getProducts = async ({ search, category, sort } = {}) => {
   const params = {};
   if (search && search.trim()) {
@@ -89,23 +86,80 @@ export const getProducts = async ({ search, category, sort } = {}) => {
   return response.data;
 };
 
-/**
- * Fetch single product details by MongoDB _id
- * @route GET /products/:id
- * @param {string} id - Product _id
- */
 export const getProductById = async (id) => {
   const response = await productApi.get(`/${id}`);
   return response.data;
 };
 
-/**
- * Create a new product
- * @route POST /products
- * @param {Object} productData - { name, description, price, category, image, stock }
- */
 export const createProduct = async (productData) => {
   const response = await productApi.post("", productData);
+  return response.data;
+};
+
+// ==========================================
+// Lab 04 — Wishlist APIs
+// ==========================================
+
+export const getWishlist = async () => {
+  const response = await wishlistApi.get("");
+  return response.data;
+};
+
+export const addToWishlist = async (productId) => {
+  const response = await wishlistApi.post(`/${productId}`);
+  return response.data;
+};
+
+export const removeFromWishlist = async (productId) => {
+  const response = await wishlistApi.delete(`/${productId}`);
+  return response.data;
+};
+
+// ==========================================
+// Lab 05 — Shopping Cart APIs
+// ==========================================
+
+export const getCart = async () => {
+  const response = await cartApi.get("");
+  return response.data;
+};
+
+export const addToCart = async (productId, quantity = 1) => {
+  const response = await cartApi.post(`/${productId}`, { quantity });
+  return response.data;
+};
+
+export const updateCartQuantity = async (productId, quantity) => {
+  const response = await cartApi.patch(`/${productId}`, { quantity });
+  return response.data;
+};
+
+export const removeFromCart = async (productId) => {
+  const response = await cartApi.delete(`/${productId}`);
+  return response.data;
+};
+
+// ==========================================
+// Lab 06 — Checkout & Orders APIs
+// ==========================================
+
+export const createPaymentOrder = async (shippingAddress) => {
+  const response = await orderApi.post("/create-payment-order", { shippingAddress });
+  return response.data;
+};
+
+export const verifyPayment = async (paymentData) => {
+  const response = await orderApi.post("/verify-payment", paymentData);
+  return response.data;
+};
+
+export const getOrders = async () => {
+  const response = await orderApi.get("");
+  return response.data;
+};
+
+export const getOrderById = async (id) => {
+  const response = await orderApi.get(`/${id}`);
   return response.data;
 };
 

@@ -1,18 +1,27 @@
 import React from "react";
-import { Search, X, Filter, ArrowUpDown } from "lucide-react";
+import { Search, Filter, X, ArrowUpDown } from "lucide-react";
 
 export default function SearchBar({
-  searchTerm,
-  onSearchChange,
+  search,
+  setSearch,
   category,
-  onCategoryChange,
-  sort,
-  onSortChange,
-  onClearFilters,
-  categories = ["All Categories", "Electronics", "Fashion", "Books", "Home"],
+  setCategory,
+  sort = "default",
+  setSort,
+  onResetFilters,
 }) {
+  const categories = [
+    "All Categories",
+    "Electronics",
+    "Fashion",
+    "Books",
+    "Home",
+    "Sports",
+    "Beauty",
+  ];
+
   const hasActiveFilters =
-    searchTerm.trim().length > 0 ||
+    (search && search.trim() !== "") ||
     (category && category !== "All Categories" && category !== "All") ||
     (sort && sort !== "default");
 
@@ -20,21 +29,20 @@ export default function SearchBar({
     <div className="search-filter-container">
       {/* Search Input Box */}
       <div className="search-input-wrapper">
-        <Search className="search-icon" size={18} />
+        <Search size={18} className="search-icon" />
         <input
           type="text"
-          id="search-input"
-          className="search-input"
           placeholder="Search products by name..."
-          value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="search-input"
+          id="product-search-input"
         />
-        {searchTerm && (
+        {search && (
           <button
             type="button"
+            onClick={() => setSearch("")}
             className="search-clear-btn"
-            id="clear-search-btn"
-            onClick={() => onSearchChange("")}
             title="Clear search"
           >
             <X size={16} />
@@ -42,16 +50,16 @@ export default function SearchBar({
         )}
       </div>
 
-      {/* Filter Toolbar Controls */}
+      {/* Filter Controls */}
       <div className="filter-controls-wrapper">
-        {/* Category Dropdown */}
+        {/* Category Selector */}
         <div className="select-wrapper">
           <Filter size={16} className="select-icon" />
           <select
-            id="category-select"
-            className="filter-select"
             value={category}
-            onChange={(e) => onCategoryChange(e.target.value)}
+            onChange={(e) => setCategory(e.target.value)}
+            className="filter-select"
+            id="product-category-select"
           >
             {categories.map((cat) => (
               <option key={cat} value={cat}>
@@ -61,31 +69,34 @@ export default function SearchBar({
           </select>
         </div>
 
-        {/* Sort Dropdown (Bonus Challenge) */}
-        <div className="select-wrapper">
-          <ArrowUpDown size={16} className="select-icon" />
-          <select
-            id="sort-select"
-            className="filter-select"
-            value={sort}
-            onChange={(e) => onSortChange(e.target.value)}
-          >
-            <option value="default">Sort by: Featured</option>
-            <option value="price_asc">Price: Low to High</option>
-            <option value="price_desc">Price: High to Low</option>
-          </select>
-        </div>
+        {/* Sort Selector */}
+        {setSort && (
+          <div className="select-wrapper">
+            <ArrowUpDown size={16} className="select-icon" />
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="filter-select"
+              id="product-sort-select"
+            >
+              <option value="default">Sort by: Default</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+              <option value="newest">Newest Arrivals</option>
+            </select>
+          </div>
+        )}
 
-        {/* Clear Filters Button */}
+        {/* Clear All Filters Button */}
         {hasActiveFilters && (
           <button
             type="button"
+            onClick={onResetFilters}
             className="btn-clear-filters"
             id="btn-clear-filters"
-            onClick={onClearFilters}
           >
-            <X size={14} />
-            <span>Reset</span>
+            <X size={15} />
+            <span>Reset Filters</span>
           </button>
         )}
       </div>
